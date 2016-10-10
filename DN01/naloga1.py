@@ -1,15 +1,16 @@
 import csv
 import math
-from itertools import product
+from itertools import combinations, product
 
 __author__ = "Anze Medved, 63120191"
 __email__ = "am1947@student.uni-lj.si"
 __course__ = "Poslovna inteligenca"
 
 class HierarchicalClustering:
-    data = None         # raw voting data, key = country name, value = voting vector
-    clusters = None     # array of arrays for clusters
-    countries = None    # country names, used also for indexing in data
+    data = None             # raw voting data, key = country name, value = voting vector
+    clusters = None         # array of arrays for clusters
+    countries = None        # country names, used also for indexing in data
+    clustering_trace = []   # trace of clustering procedure (needed for dendrogram)
 
     def __init__(self, filename, idx_start, idx_end):
         """
@@ -60,7 +61,8 @@ class HierarchicalClustering:
         :param idx_ignore: list of indices to ignore
         :return: euclidean distance value (float)
         """
-        tmp_zip = zip(vec1, vec2)
+        tmp_zip = list(zip(vec1, vec2))
+        idx_ignore.sort(key=int, reverse=True)
         for idx in idx_ignore:
             del(tmp_zip[idx])
 
@@ -74,9 +76,9 @@ class HierarchicalClustering:
         :param c2: second cluster (array of names)
         :return: average linkage value
         """
-        combinations = [(self.data[c1n],self.data[c2n],[self.countries.index(c1n),self.countries.index(c2n)]) for
+        cluster_prod = [(self.data[c1n],self.data[c2n],[self.countries.index(c1n),self.countries.index(c2n)]) for
                         (c1n, c2n) in product(c1,c2)]
-        return sum([self.euclidean_distance(*c) for c in combinations]) / (len(c1) * len(c2) * 1.0)
+        return sum([self.euclidean_distance(*c) for c in cluster_prod]) / (len(c1) * len(c2) * 1.0)
 
     def complete_linkage(self, c1, c2):
         """
@@ -86,9 +88,9 @@ class HierarchicalClustering:
         :param c2: second cluster (array of names)
         :return: maximum distance
         """
-        combinations = [(self.data[c1n], self.data[c2n], [self.countries.index(c1n), self.countries.index(c2n)]) for
+        cluster_prod = [(self.data[c1n], self.data[c2n], [self.countries.index(c1n), self.countries.index(c2n)]) for
                         (c1n, c2n) in product(c1, c2)]
-        return max([self.euclidean_distance(*c) for c in combinations])
+        return max([self.euclidean_distance(*c) for c in cluster_prod])
 
     def single_linkage(self, c1, c2):
         """
@@ -98,9 +100,29 @@ class HierarchicalClustering:
         :param c2: second cluster (array of names)
         :return: minimum distance
         """
-        combinations = [(self.data[c1n], self.data[c2n], [self.countries.index(c1n), self.countries.index(c2n)]) for
+        cluster_prod = [(self.data[c1n], self.data[c2n], [self.countries.index(c1n), self.countries.index(c2n)]) for
                         (c1n, c2n) in product(c1, c2)]
-        return min([self.euclidean_distance(*c) for c in combinations])
+        return min([self.euclidean_distance(*c) for c in cluster_prod])
+
+    def closest_clusters(self, linkage_fun):
+        """
+        Function computes closest clusters from current state of clusters. Function takes another function
+        as a parameter, which is used to compute linkage. It returns 2 element array, where first value is
+        linkage value between clusters and second pair of clusters to be merged.
+        :param linkage_fun : function to compute linkage
+        :return: [double value, tuple]
+        """
+        return min([[linkage_fun(*comb),comb] for comb in combinations(self.clusters, 2)])
+
+    def update_clusters(self, new_cluster):
+        """
+        Function updates current clusters status based on new cluster merge
+        :param new_cluster: new merged cluster (tuple)
+        :return: void
+        """
+        unchanged = [c for c in self.clusters if c not in new_cluster]
+        changed = [new_cluster[0] + new_cluster[1]]
+        self.clusters = unchanged + changed
 
     def compute_clusters(self):
         """
@@ -109,10 +131,15 @@ class HierarchicalClustering:
         :return: void - all changes are made to object attributes
         """
         while len(self.clusters) > 1:
-            a=1 # TODO
+            closest = self.closest_clusters(self.average_linkage)
+            self.clustering_trace.append(closest)
+            self.update_clusters(closest[1])
+
+
 
 
 
 if __name__ == "__main__":
     hc = HierarchicalClustering('eurovision-final.csv', 16, 63)
+    hc.compute_clusters()
 
