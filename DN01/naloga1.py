@@ -136,10 +136,60 @@ class HierarchicalClustering:
             self.update_clusters(closest[1])
 
 
+class Dendrogram:
+    lchild = None
+    rchild = None
+    height = -1
+    value = []
+
+    def __init__(self,height=-1, value=[], lchild=None, rchild=None):
+        """
+        Function initializes new dendrogram object. Object are built in tree like structure, which simplifies visualization.
+        :param height: distance between clusters
+        :param value: cluster tuple
+        :param lchild: previous left sub-cluster
+        :param rchild: previous right sub-cluster
+        """
+        self.lchild = lchild
+        self.rchild = rchild
+        self.value = value
+        self.height = height
+
+    @staticmethod
+    def contains_sublist(lst, sublst):
+        """
+        Function checks if there exists sublist "sublst" in provided list "lst". It stops searching after first occurance
+        of sublist or fails after trying all options.
+        :param lst: list in which we search
+        :param sublst: list that we search for ("template")
+        :return: boolean
+        """
+        n = len(sublst)
+        return any((sublst == lst[i:i + n]) for i in range(len(lst) - n + 1))
+
+    def add_child(self, height, cluster):
+        """
+        TODO docstring
+        :param height:
+        :param cluster:
+        :return:
+        """
+        if self.contains_sublist(self.value[0], cluster[0]):
+            if(self.lchild is not None):
+                self.lchild.add_child(height, cluster)
+            else:
+                self.lchild = Dendrogram(height,cluster)
+        elif self.contains_sublist(self.value[1], cluster[0]):
+            if(self.rchild is not None):
+                self.rchild.add_child(height, cluster)
+            else:
+                self.rchild = Dendrogram(height,cluster)
+
 
 
 
 if __name__ == "__main__":
     hc = HierarchicalClustering('eurovision-final.csv', 16, 63)
     hc.compute_clusters()
+    print(hc.clustering_trace)
 
