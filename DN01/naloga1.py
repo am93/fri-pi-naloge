@@ -1,6 +1,7 @@
 import csv
 import math
 from itertools import combinations, product
+import matplotlib.pyplot as plt
 
 __author__ = "Anze Medved, 63120191"
 __email__ = "am1947@student.uni-lj.si"
@@ -11,6 +12,7 @@ class HierarchicalClustering:
     clusters = None         # array of arrays for clusters
     countries = None        # country names, used also for indexing in data
     clustering_trace = []   # trace of clustering procedure (needed for dendrogram)
+    dendrogram = None
 
     def __init__(self, filename, idx_start, idx_end):
         """
@@ -136,13 +138,51 @@ class HierarchicalClustering:
             self.update_clusters(closest[1])
 
 
+    def create_dendrogram(self):
+        self.clustering_trace.reverse()
+        trace = self.clustering_trace
+        first = trace.pop(0)
+        self.dendro = Dendrogram(first[0],first[1])
+
+        while len(trace) > 0:
+            tmp = trace.pop(0)
+            self.dendro.add_child(tmp[0],tmp[1])
+
+
+
+class Visualizer:
+    cluster_trace = []
+    countries = {}
+
+    def __init__(self, cluster_trace):
+        """
+        Initializes new object. Cluster_trace is an array of arrays, where each subarray has to elements -> float value
+        that represents distance and tuple of clusters that were merged
+        :param cluster_trace: (see above)
+        """
+        self.cluster_trace = cluster_trace
+        self.cluster_trace.reverse()
+        tmp_countries = self.cluster_trace[0][1][0] + self.cluster_trace[0][1][1]
+        self.countries = {c:idx for (idx, c) in enumerate(tmp_countries)}
+        self.cluster_trace.reverse()
+
+
+    def create_dendrogram(self):
+        while len(self.cluster_trace) > 1:
+            crr_pair = self.cluster_trace.pop(0)
+
+
+
 class Dendrogram:
+    country_order = None
+    parent = None
     lchild = None
     rchild = None
     height = -1
+    x_cord = -1
     value = []
 
-    def __init__(self,height=-1, value=[], lchild=None, rchild=None):
+    def __init__(self,height=-1, value=[],  parent=None, lchild=None, rchild=None, x=-1):
         """
         Function initializes new dendrogram object. Object are built in tree like structure, which simplifies visualization.
         :param height: distance between clusters
@@ -154,6 +194,8 @@ class Dendrogram:
         self.rchild = rchild
         self.value = value
         self.height = height
+        self.parent = parent
+        self.x_cord = x
 
     @staticmethod
     def contains_sublist(lst, sublst):
@@ -178,12 +220,69 @@ class Dendrogram:
             if(self.lchild is not None):
                 self.lchild.add_child(height, cluster)
             else:
-                self.lchild = Dendrogram(height,cluster)
+                self.lchild = Dendrogram(height,cluster, self)
+
         elif self.contains_sublist(self.value[1], cluster[0]):
             if(self.rchild is not None):
                 self.rchild.add_child(height, cluster)
             else:
-                self.rchild = Dendrogram(height,cluster)
+                self.rchild = Dendrogram(height,cluster, self)
+
+    def create_leaves(self):
+        """
+        TODO
+        :return:
+        """
+        countries = {c: idx for (idx, c) in enumerate(self.value[0] + self.value[1])}
+        self.recursive_leaves(self, countries)
+        self.country_order = self.value[0] + self.value[1]
+
+    @staticmethod
+    def print_dendro(dendro):
+        if dendro.lchild is not None:
+            print(dendro.value)
+            print(dendro.x_cord)
+            Dendrogram.print_dendro(dendro.lchild)
+        else:
+            print(dendro.value)
+            print(dendro.x_cord)
+
+    @staticmethod
+    def recursive_leaves(tree,countries):
+        """
+        TODO
+        :param tree: 
+        :param countries: 
+        :return: 
+        """
+        if tree.lchild is not None:
+            Dendrogram.recursive_leaves(tree.lchild, countries)
+        else:
+            tree.lchild = Dendrogram(0, tree.value[0], tree, None, None, countries[tree.value[0][0]])
+
+        if tree.rchild is not None:
+            Dendrogram.recursive_leaves(tree.rchild, countries)
+        else:
+            tree.rchild = Dendrogram(0, tree.value[1], tree, None, None, countries[tree.value[1][0]])
+
+        tree.x_cord = float(tree.lchild.x_cord + tree.rchild.x_cord) / 2
+
+
+    @staticmethod
+    def visualize_dendrogram(crr):
+        """
+        TODO
+        :param crr:
+        :return:
+        """
+        if len(crr.value) == 1:
+            return
+        else:
+            plt.hlines(crr.height, crr.lchild.x_cord, crr.rchild.x_cord)
+            plt.vlines(crr.lchild.x_cord, crr.lchild.height, crr.height)
+            plt.vlines(crr.rchild.x_cord, crr.rchild.height, crr.height)
+            Dendrogram.visualize_dendrogram(crr.lchild)
+            Dendrogram.visualize_dendrogram(crr.rchild)
 
 
 
@@ -191,5 +290,13 @@ class Dendrogram:
 if __name__ == "__main__":
     hc = HierarchicalClustering('eurovision-final.csv', 16, 63)
     hc.compute_clusters()
-    print(hc.clustering_trace)
+    hc.create_dendrogram()
+    hc.dendro.create_leaves()
+    #Dendrogram.print_dendro(hc.dendro)
+    Dendrogram.visualize_dendrogram(hc.dendro)
+    plt.axis([-1, len(hc.dendro.country_order), 0, hc.dendro.height + 10])
+    plt.xticks(range(0,len(hc.dendro.country_order)), [c for c in hc.dendro.country_order], rotation=90)
+    plt.tight_layout()
+    plt.show()
+
 
