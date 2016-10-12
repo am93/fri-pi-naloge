@@ -2,6 +2,8 @@ import csv
 import math
 from itertools import combinations, product
 import matplotlib.pyplot as plt
+import random
+r = lambda: random.randint(0,255)
 
 __author__ = "Anze Medved, 63120191"
 __email__ = "am1947@student.uni-lj.si"
@@ -150,11 +152,14 @@ class HierarchicalClustering:
             tmp = trace.pop(0)
             self.dendro.add_child(tmp[0],tmp[1])
 
-    def prepare_visualization(self):
+    def prepare_visualization(self, num=0, color=False):
         """
         Function visualizes dendrogram using matplotlib
         """
-        Dendrogram.visualize_dendrogram(self.dendro)
+        if not color:
+            Dendrogram.visualize_dendrogram(self.dendro, '#000000')
+        elif color and num > 1:
+            Dendrogram.color_dendrogram(self.dendro, num)
         plt.axis([-1, len(self.dendro.country_order), 0, self.dendro.height + 10])
         plt.xticks(range(0, len(self.dendro.country_order)), [c for c in self.dendro.country_order], rotation=90)
         plt.tight_layout()
@@ -250,23 +255,60 @@ class Dendrogram:
 
         tree.x_cord = float(tree.lchild.x_cord + tree.rchild.x_cord) / 2
 
-
     @staticmethod
-    def visualize_dendrogram(crr):
+    def visualize_dendrogram(crr, clr):
         """
         Function visualizes dendrogram using matplotlib
         :param crr: current cluster in dendrogram (start with root)
+        :param clr: color
         :return: void
         """
         if len(crr.value) == 1:
             return
         else:
-            plt.hlines(crr.height, crr.lchild.x_cord, crr.rchild.x_cord)
-            plt.vlines(crr.lchild.x_cord, crr.lchild.height, crr.height)
-            plt.vlines(crr.rchild.x_cord, crr.rchild.height, crr.height)
-            Dendrogram.visualize_dendrogram(crr.lchild)
-            Dendrogram.visualize_dendrogram(crr.rchild)
+            plt.hlines(crr.height, crr.lchild.x_cord, crr.rchild.x_cord, colors=clr)
+            plt.vlines(crr.lchild.x_cord, crr.lchild.height, crr.height, colors=clr)
+            plt.vlines(crr.rchild.x_cord, crr.rchild.height, crr.height, colors=clr)
+            Dendrogram.visualize_dendrogram(crr.lchild, clr)
+            Dendrogram.visualize_dendrogram(crr.rchild, clr)
 
+    @staticmethod
+    def get_num_clusters(crr, elem_list, num_elem):
+        """
+        Function returns wanted number of clusters
+        :param tree: Dendrogram object
+        :param src_list: array of Dendrogram object (aka clusters)
+        :param num_elem: number of wanted clusters
+        :return: array of Dendrogram objects
+        """
+        if len(elem_list) < num_elem:
+            elem_list.pop(elem_list.index(crr))
+            elem_list.append(crr.lchild)
+            elem_list.append(crr.rchild)
+            new_crr = max(elem_list, key=lambda x: x.height)
+            Dendrogram.get_num_clusters(new_crr, elem_list, num_elem)
+
+        return elem_list
+
+    @staticmethod
+    def color_dendrogram(dendro, num_clstr):
+        """
+        Function will draw color dendrogram, where each cluster will have its own color. Number of wanted clusters
+        is passed as an argument. Function also draws red line, which represents "cut-off" point.
+        :param dendro: root dendrogram object
+        :param num_clstr: number of wanted clusters
+        :return: void
+        """
+        first = max([dendro.lchild, dendro.rchild], key=lambda x: x.height)
+        clusters = Dendrogram.get_num_clusters(first,[dendro.lchild, dendro.rchild], num_clstr)
+
+        Dendrogram.visualize_dendrogram(dendro, '#000000')
+        for c in clusters:
+            color = "".join('#%02X%02X%02X' % (r(), r(), r()))
+            Dendrogram.visualize_dendrogram(c,color)
+
+        max_height = max(clusters, key=lambda x: x.height).height
+        plt.hlines(max_height+1, -1, len(dendro.country_order), 'r')
 
 
 if __name__ == "__main__":
@@ -274,7 +316,7 @@ if __name__ == "__main__":
     hc.compute_clusters() # create clusters
     hc.create_dendrogram() # create dendrogram based on clusters
     hc.dendro.create_leaves() # add leaf nodes to dendrogram (single countries)
-    hc.prepare_visualization() # preapre and show visualization
+    hc.prepare_visualization(10, True) # preapre and show visualization
 
 
 
