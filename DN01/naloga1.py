@@ -152,11 +152,11 @@ class HierarchicalClustering:
             tmp = trace.pop(0)
             self.dendro.add_child(tmp[0],tmp[1])
 
-    def prepare_visualization(self, num=0, color=False):
+    def prepare_visualization(self, num=1, color=False):
         """
         Function visualizes dendrogram using matplotlib
         """
-        if not color:
+        if not color or num < 2:
             Dendrogram.visualize_dendrogram(self.dendro, '#000000')
         elif color and num > 1:
             Dendrogram.color_dendrogram(self.dendro, num)
