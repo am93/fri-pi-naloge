@@ -165,6 +165,15 @@ class HierarchicalClustering:
         plt.tight_layout()
         plt.show()
 
+    def print_voting_profile(self, country):
+        """
+        Function prints voting profile of given country
+        :param country: name of country (string)
+        """
+        profile = list(zip(hc.data[country], hc.countries))
+        profile.sort(key= lambda x : x[0], reverse=True)
+        print(profile)
+
 
 
 class Dendrogram:
@@ -316,7 +325,9 @@ if __name__ == "__main__":
     hc.compute_clusters() # create clusters
     hc.create_dendrogram() # create dendrogram based on clusters
     hc.dendro.create_leaves() # add leaf nodes to dendrogram (single countries)
-    hc.prepare_visualization(10, True) # preapre and show visualization
+    hc.prepare_visualization(13, True) # prepare and show visualization
+    hc.print_voting_profile('Slovenia')
+
 
 
 
