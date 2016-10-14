@@ -15,15 +15,16 @@ class HierarchicalClustering:
     countries = None        # country names, used also for indexing in data
     clustering_trace = []   # trace of clustering procedure (needed for dendrogram)
     dendrogram = None
+    mode_cum = True
 
-    def __init__(self, filename, idx_start, idx_end):
+    def __init__(self, filename, idx_start, idx_end, cumulative=True):
         """
         When object is created, data is read from csv file
         :param filename: name of csv file
         :param idx_start: start index of data
         :param idx_end: last index of data
         """
-        file = open("eurovision-final.csv", "r", encoding="latin1")
+        file = open(filename, "r", encoding="latin1")
         csv_reader = csv.reader(file)
 
         # Get voting countries from first row
@@ -32,17 +33,27 @@ class HierarchicalClustering:
         self.check_for_and_sign(country_names)
 
         # Get voting data for each country
-        voting_data = {cn:([0]*len(country_names)) for cn in country_names}
-        for row in csv_reader:
-            idx_country = country_names.index(row[1].strip())
-            for i in range(idx_start, idx_end):
-                if row[i] != '':
-                    voting_data[country_names[i-idx_start]][idx_country] += int(row[i])
+        if cumulative:
+            voting_data = {cn:([0]*len(country_names)) for cn in country_names}
+            for row in csv_reader:
+                idx_country = country_names.index(row[1].strip())
+                for i in range(idx_start, idx_end):
+                    if row[i] != '':
+                        voting_data[country_names[i-idx_start]][idx_country] += int(row[i])
+        else:
+            voting_data = {cn: [] for cn in country_names}
+            for row in csv_reader:
+                for i in range(idx_start, idx_end):
+                    if row[i] != '':
+                        voting_data[country_names[i - idx_start]].append(float(row[i]))
+                    else:
+                        voting_data[country_names[i - idx_start]].append(None)
 
         # Assign results to object
         self.data = voting_data
         self.countries = country_names
         self.clusters = [[cn] for cn in country_names]
+        self.mode_cum = cumulative
 
     @staticmethod
     def check_for_and_sign(names):
@@ -65,12 +76,19 @@ class HierarchicalClustering:
         :param idx_ignore: list of indices to ignore
         :return: euclidean distance value (float)
         """
-        tmp_zip = list(zip(vec1, vec2))
-        idx_ignore.sort(key=int, reverse=True)
-        for idx in idx_ignore:
-            del(tmp_zip[idx])
+        # if we are in cumulative mode (votes summed)
+        if self.mode_cum:
+            tmp_zip = list(zip(vec1, vec2))
+            idx_ignore.sort(key=int, reverse=True)
+            for idx in idx_ignore:
+                del(tmp_zip[idx])
 
-        return math.sqrt(sum([math.pow(x1 - x2, 2) for (x1, x2) in tmp_zip]))
+            return math.sqrt(sum([math.pow(x1 - x2, 2) for (x1, x2) in tmp_zip]))
+
+        # we have complete column of votes
+        else:
+            diffs = [math.pow((a - b),2) for a, b in zip(vec1, vec2) if a != None and b != None]
+            return math.sqrt(sum(diffs) / (len(diffs)+math.pow(1,-10)))
 
     def average_linkage(self, c1, c2):
         """
@@ -321,7 +339,7 @@ class Dendrogram:
 
 
 if __name__ == "__main__":
-    hc = HierarchicalClustering('eurovision-final.csv', 16, 63) # read data from file
+    hc = HierarchicalClustering('eurovision-final.csv', 16, 63, True) # read data from file
     hc.compute_clusters() # create clusters
     hc.create_dendrogram() # create dendrogram based on clusters
     hc.dendro.create_leaves() # add leaf nodes to dendrogram (single countries)
