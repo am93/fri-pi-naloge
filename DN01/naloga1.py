@@ -15,9 +15,9 @@ class HierarchicalClustering:
     countries = None        # country names, used also for indexing in data
     clustering_trace = []   # trace of clustering procedure (needed for dendrogram)
     dendrogram = None
-    mode_cum = True
+    mode_none = True
 
-    def __init__(self, filename, idx_start, idx_end, cumulative=True):
+    def __init__(self, filename, idx_start, idx_end, use_none=False):
         """
         When object is created, data is read from csv file
         :param filename: name of csv file
@@ -33,7 +33,8 @@ class HierarchicalClustering:
         self.check_for_and_sign(country_names)
 
         # Get voting data for each country
-        if cumulative:
+        if not use_none:
+            # start with zeros -> missing value is considered as zero
             voting_data = {cn:([0]*len(country_names)) for cn in country_names}
             for row in csv_reader:
                 idx_country = country_names.index(row[1].strip())
@@ -41,19 +42,23 @@ class HierarchicalClustering:
                     if row[i] != '':
                         voting_data[country_names[i-idx_start]][idx_country] += int(row[i])
         else:
-            voting_data = {cn: [] for cn in country_names}
+            # start with None -> missing value is considered as None
+            voting_data = {cn: ([None] * len(country_names)) for cn in country_names}
             for row in csv_reader:
+                idx_country = country_names.index(row[1].strip())
                 for i in range(idx_start, idx_end):
                     if row[i] != '':
-                        voting_data[country_names[i - idx_start]].append(float(row[i]))
-                    else:
-                        voting_data[country_names[i - idx_start]].append(None)
+                        if voting_data[country_names[i - idx_start]][idx_country] is not None:
+                            voting_data[country_names[i - idx_start]][idx_country] += int(row[i])
+                        else:
+                            voting_data[country_names[i - idx_start]][idx_country] = int(row[i])
+
 
         # Assign results to object
         self.data = voting_data
         self.countries = country_names
         self.clusters = [[cn] for cn in country_names]
-        self.mode_cum = cumulative
+        self.mode_none = use_none
 
     @staticmethod
     def check_for_and_sign(names):
@@ -77,7 +82,7 @@ class HierarchicalClustering:
         :return: euclidean distance value (float)
         """
         # if we are in cumulative mode (votes summed)
-        if self.mode_cum:
+        if not self.mode_none:
             tmp_zip = list(zip(vec1, vec2))
             idx_ignore.sort(key=int, reverse=True)
             for idx in idx_ignore:
@@ -178,7 +183,7 @@ class HierarchicalClustering:
             Dendrogram.visualize_dendrogram(self.dendro, '#000000')
         elif color and num > 1:
             Dendrogram.color_dendrogram(self.dendro, num)
-        plt.axis([-1, len(self.dendro.country_order), 0, self.dendro.height + 10])
+        plt.axis([-1, len(self.dendro.country_order), 0, self.dendro.height + 5])
         plt.xticks(range(0, len(self.dendro.country_order)), [c for c in self.dendro.country_order], rotation=90)
         plt.tight_layout()
         plt.show()
@@ -188,7 +193,7 @@ class HierarchicalClustering:
         Function prints voting profile of given country
         :param country: name of country (string)
         """
-        profile = list(zip(hc.data[country], hc.countries))
+        profile = [(v,c) if v is not None else (-1,c) for (v, c) in list(zip(hc.data[country], hc.countries))]
         profile.sort(key= lambda x : x[0], reverse=True)
         print(profile)
 
