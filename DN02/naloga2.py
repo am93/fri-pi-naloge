@@ -1,5 +1,7 @@
 import unidecode
 from collections import Counter
+from my_clustering import HierarchicalClustering
+
 
 __author__ = "Anze Medved, 63120191"
 __email__ = "am1947@student.uni-lj.si"
@@ -9,12 +11,12 @@ __course__ = "Poslovna inteligenca"
 class LanguageSimilarity:
     lang_ids = {}   # language_id : language name
     languages = {}  # language_id : {pair : value}
-    directory = ""
+    directory = ""  # directory name of input data
 
-    def __init__(self, languages, dir):
-        self.directory = dir
+    def __init__(self, languages, directory):
+        self.directory = directory
         self.get_language_ids(languages)
-        self.langs = self.parse_input()
+        self.parse_input()
 
     def parse_input(self):
         """
@@ -36,8 +38,8 @@ class LanguageSimilarity:
         for row in index_file:
             splitted = row.split()
             idx = [(splitted[0], lang) for lang in languages if lang in row]
-            if len(idx) > 1 : print('ERR: Found more than single index !')
-            if len(idx) == 1: ids[idx[0][0]] = idx[0][1];
+            if len(idx) > 1: print('ERR: Found more than single index !')
+            if len(idx) == 1: ids[idx[0][0]] = idx[0][1]
         self.lang_ids = ids
 
     @staticmethod
@@ -63,10 +65,17 @@ class LanguageSimilarity:
         cont = unidecode.unidecode(cont)
         cont = cont.lower()
         for reg in ['\t', '\n', '  ', '.', ',', ':', ';']:
-            cont = cont.replace(reg,' ')
+            cont = cont.replace(reg, ' ')
         return "".join(c for c in cont if c.isalpha() or c == ' ')
 
 
 if __name__ == "__main__":
-    ls = LanguageSimilarity(['Slovenian','Russian'],'translations/')
+    ls = LanguageSimilarity(['Slovenian', 'Russian', 'Albanian', 'Macedonian', 'Serbian (Latin)',
+                             'Hungarian', 'Finnish', 'Polish', 'Greek', 'Turkish'], 'translations/')
+    hc = HierarchicalClustering(ls.languages, ls.lang_ids, HierarchicalClustering.cosine_distance,
+                                HierarchicalClustering.average_linkage)
+    hc.compute_clusters()  # create clusters
+    hc.create_dendrogram()  # create dendrogram based on clusters
+    hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
+    hc.prepare_visualization()
     [print(len(ls.languages[id])) for id in ls.lang_ids.keys()]
