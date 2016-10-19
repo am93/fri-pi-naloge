@@ -54,6 +54,9 @@ class LanguageSimilarity:
         return sorted_results
 
     def print_identification_results(self, original, r):
+        """
+        Outprint language identification results
+        """
         print('-------------------------------')
         print('Original text was in: ', original)
         preds = "".join('('+self.lang_ids[r[i][0]]+', '+str(r[i][1])+') ' for i in range(3))
@@ -109,8 +112,19 @@ if __name__ == "__main__":
     hc.prepare_visualization()
 
     # Drugi del naloge
-    real = ['Japanese', 'Swedish', 'Slovenian', 'Spanish', 'German', 'Icelandic']
-    for i in range(0,6):
+    real = ['Japanese', 'Swedish', 'Slovenian', 'Spanish', 'German', 'Icelandic', 'Greek', 'Polish', 'Bulgarian', 'Chinese']
+    for i in range(0,len(real)):
         lang = ls.identify_language('samples/'+str(i)+'.txt')
         ls.print_identification_results(real[i], lang)
+
+    # Druga dodatna naloga
+    # -> zaradi cudnega buga je potrebeno zakomentirati obvezni del naloge, da ta naloga deluje
+    # -> razlog je v tem da se objekta hc in ls nekako ponovno uporabita
+    ls2 = LanguageSimilarity(['German','Finnish', 'Hungarian', 'Persian', 'eng	English'], 'translations/')
+    hc2 = HierarchicalClustering(ls2.languages, ls2.lang_ids, HierarchicalClustering.cosine_distance,
+                                HierarchicalClustering.average_linkage)
+    hc2.compute_clusters()  # create clusters
+    hc2.create_dendrogram()  # create dendrogram based on clusters
+    hc2.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
+    hc2.prepare_visualization()
 

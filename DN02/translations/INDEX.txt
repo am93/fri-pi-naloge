@@ -188,6 +188,7 @@ por	Portuguese
 ppl	Pipil
 pql	Polish (Polski)
 pro	Prouvençau
+prs Persian
 prv1	Occitan Languedocien
 qan	Quechua del Callejon de Huaylas
 qar	Quechua de Cotahuasi (Arequipa)
