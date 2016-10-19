@@ -7,25 +7,38 @@ __course__ = "Poslovna inteligenca"
 
 
 class LanguageSimilarity:
-
-    languages = {}
+    lang_ids = {}   # language_id : language name
+    languages = {}  # language_id : {pair : value}
     directory = ""
 
     def __init__(self, languages, dir):
         self.directory = dir
-        self.langs = self.parse_input(languages)
+        self.get_language_ids(languages)
+        self.langs = self.parse_input()
 
-    def parse_input(self, languages):
+    def parse_input(self):
         """
         Function reads input files and parses them to dictionary
-        :param langs: list of languages
-        :return: void
         """
-        for lang in languages:
-            text = LanguageSimilarity.read_file(self.directory+lang+'.txt')
-            trip = Counter(self.tuples(text))
-            self.languages[lang] = trip
+        for lang_id in self.lang_ids.keys():
+            text = LanguageSimilarity.read_file(self.directory+lang_id+'.txt')
+            pairs = Counter(self.tuples(text))
+            self.languages[lang_id] = pairs
 
+    def get_language_ids(self, languages, index_filename='translations/INDEX.txt'):
+        """
+        Function get language identifiers from index file.
+        :param languages: String names of languages
+        :param index_filename: index filename
+        """
+        ids = {}
+        index_file = open(index_filename, 'r')
+        for row in index_file:
+            splitted = row.split()
+            idx = [(splitted[0], lang) for lang in languages if lang in row]
+            if len(idx) > 1 : print('ERR: Found more than single index !')
+            if len(idx) == 1: ids[idx[0][0]] = idx[0][1];
+        self.lang_ids = ids
 
     @staticmethod
     def tuples(string, k=2):
@@ -42,12 +55,18 @@ class LanguageSimilarity:
     def read_file(filename):
         """
         Read file from given filename
+        TODO - think if you should keep punctuations
         :param filename: name of file to be read
         :return: file content
         """
-        cont = open(filename).read()
+        cont = open(filename, encoding="UTF-8").read()
         cont = unidecode.unidecode(cont)
-        cont.lower()
-        cont.replace('\n',' ')
-        cont.replace('  ',' ')
+        cont = cont.lower()
+        for reg in ['\t', '\n', '  ', '.', ',', ':', ';']:
+            cont = cont.replace(reg,' ')
         return "".join(c for c in cont if c.isalpha() or c == ' ')
+
+
+if __name__ == "__main__":
+    ls = LanguageSimilarity(['Slovenian','Russian'],'translations/')
+    [print(len(ls.languages[id])) for id in ls.lang_ids.keys()]
