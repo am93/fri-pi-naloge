@@ -98,33 +98,57 @@ class LanguageSimilarity:
 
 
 if __name__ == "__main__":
-    # Prvi del naloge
-    ls = LanguageSimilarity(['Slovenian', 'Russian', 'Lithuanian', 'Estonian', 'Macedonian', 'Serbian (Latin)',
-                             'Polish', 'Greek', 'Bulgarian', 'Icelandic', 'Filipino', 'Italian', 'Latvian',
-                             'Luxembourgish', 'German', 'Norwegian (Nynorsk)', 'Swedish', 'Romanian',
-                             'Belorus', 'Slovak', 'Bosnian (Cyrillic script)', 'Japanese', 'Corsican',
-                             'Chinese', 'Javanese', 'Spanish', 'Portuguese'], 'translations/')
-    hc = HierarchicalClustering(ls.languages, ls.lang_ids, HierarchicalClustering.cosine_distance,
-                                HierarchicalClustering.average_linkage)
-    hc.compute_clusters()  # create clusters
-    hc.create_dendrogram()  # create dendrogram based on clusters
-    hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
-    hc.prepare_visualization()
 
-    # Drugi del naloge
-    real = ['Japanese', 'Swedish', 'Slovenian', 'Spanish', 'German', 'Icelandic', 'Greek', 'Polish', 'Bulgarian', 'Chinese']
-    for i in range(0,len(real)):
-        lang = ls.identify_language('samples/'+str(i)+'.txt')
-        ls.print_identification_results(real[i], lang)
+    hw_part = ['obvezni', 'dodatni1', 'dodatni2']
+    chosen = hw_part[1]
 
-    # Druga dodatna naloga
-    # -> zaradi cudnega buga je potrebeno zakomentirati obvezni del naloge, da ta naloga deluje
-    # -> razlog je v tem da se objekta hc in ls nekako ponovno uporabita
-    ls2 = LanguageSimilarity(['German','Finnish', 'Hungarian', 'Persian', 'eng	English'], 'translations/')
-    hc2 = HierarchicalClustering(ls2.languages, ls2.lang_ids, HierarchicalClustering.cosine_distance,
-                                HierarchicalClustering.average_linkage)
-    hc2.compute_clusters()  # create clusters
-    hc2.create_dendrogram()  # create dendrogram based on clusters
-    hc2.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
-    hc2.prepare_visualization()
+    if chosen == 'obvezni':
+        print('-------- You selected mandatory part of exerice !')
+        # Prvi del naloge
+        ls = LanguageSimilarity(['Slovenian', 'Russian', 'Lithuanian', 'Estonian', 'Macedonian', 'Serbian (Latin)',
+                                 'Polish', 'Greek', 'Bulgarian', 'Icelandic', 'Filipino', 'Italian', 'Latvian',
+                                 'Luxembourgish', 'German', 'Norwegian (Nynorsk)', 'Swedish', 'Romanian',
+                                 'Belorus', 'Slovak', 'Bosnian (Cyrillic script)', 'Japanese', 'Corsican',
+                                 'Chinese', 'Javanese', 'Spanish', 'Portuguese'], 'translations/')
+        hc = HierarchicalClustering(ls.languages, ls.lang_ids, HierarchicalClustering.cosine_distance,
+                                    HierarchicalClustering.average_linkage)
+        hc.compute_clusters()  # create clusters
+        hc.create_dendrogram()  # create dendrogram based on clusters
+        hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
+        hc.prepare_visualization()
+
+        # Drugi del naloge
+        real = ['Japanese', 'Swedish', 'Slovenian', 'Spanish', 'German', 'Icelandic', 'Greek', 'Polish', 'Bulgarian', 'Chinese']
+        for i in range(0,len(real)):
+            lang = ls.identify_language('samples/'+str(i)+'.txt')
+            ls.print_identification_results(real[i], lang)
+
+    elif chosen == 'dodatni1':
+        print('-------- You selected first bonus part of exerice !')
+        # Prva dodatna naloga
+        ls = LanguageSimilarity(['Slovenian', 'Russian', 'Lithuanian', 'Estonian', 'Macedonian', 'Serbian (Latin)',
+                                 'Polish', 'Greek', 'Bulgarian', 'Icelandic', 'Filipino', 'Italian', 'Latvian',
+                                 'Luxembourgish', 'German', 'Norwegian (Nynorsk)', 'Swedish', 'Romanian',
+                                 'Belorus', 'Slovak', 'Bosnian (Cyrillic script)', 'Japanese', 'Corsican',
+                                 'Chinese', 'Javanese', 'Spanish', 'Portuguese'], 'news/')
+        hc = HierarchicalClustering(ls.languages, ls.lang_ids, HierarchicalClustering.cosine_distance,
+                                    HierarchicalClustering.average_linkage)
+        hc.compute_clusters()  # create clusters
+        hc.create_dendrogram()  # create dendrogram based on clusters
+        hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
+        hc.prepare_visualization()
+
+    elif chosen == 'dodatni2':
+        print('-------- You selected second bonus part of exerice !')
+        # Druga dodatna naloga
+        ls2 = LanguageSimilarity(['German','Finnish', 'Hungarian', 'Persian', 'eng	English'], 'translations/')
+        hc2 = HierarchicalClustering(ls2.languages, ls2.lang_ids, HierarchicalClustering.cosine_distance,
+                                    HierarchicalClustering.average_linkage)
+        hc2.compute_clusters()  # create clusters
+        hc2.create_dendrogram()  # create dendrogram based on clusters
+        hc2.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
+        hc2.prepare_visualization()
+
+    else:
+        print('ERROR ! Wrong or no exercise selected !')
 
