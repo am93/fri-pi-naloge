@@ -103,7 +103,7 @@ if __name__ == "__main__":
     chosen = hw_part[1]
 
     if chosen == 'obvezni':
-        print('-------- You selected mandatory part of exerice !')
+        print('-------- You selected mandatory part of exercise !')
         # Prvi del naloge
         ls = LanguageSimilarity(['Slovenian', 'Russian', 'Lithuanian', 'Estonian', 'Macedonian', 'Serbian (Latin)',
                                  'Polish', 'Greek', 'Bulgarian', 'Icelandic', 'Filipino', 'Italian', 'Latvian',
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             ls.print_identification_results(real[i], lang)
 
     elif chosen == 'dodatni1':
-        print('-------- You selected first bonus part of exerice !')
+        print('-------- You selected first bonus part of exercise !')
         # Prva dodatna naloga
         ls = LanguageSimilarity(['Slovenian', 'Russian', 'Lithuanian', 'Estonian', 'Macedonian', 'Serbian (Latin)',
                                  'Polish', 'Greek', 'Bulgarian', 'Icelandic', 'Filipino', 'Italian', 'Latvian',
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         hc.prepare_visualization()
 
     elif chosen == 'dodatni2':
-        print('-------- You selected second bonus part of exerice !')
+        print('-------- You selected second bonus part of exercise !')
         # Druga dodatna naloga
         ls2 = LanguageSimilarity(['German','Finnish', 'Hungarian', 'Persian', 'eng	English'], 'translations/')
         hc2 = HierarchicalClustering(ls2.languages, ls2.lang_ids, HierarchicalClustering.cosine_distance,
