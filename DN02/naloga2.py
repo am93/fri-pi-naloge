@@ -59,8 +59,8 @@ class LanguageSimilarity:
         """
         print('-------------------------------')
         print('Original text was in: ', original)
-        preds = "".join('('+self.lang_ids[r[i][0]]+', '+str(r[i][1])+') ' for i in range(3))
-        print('Predicted languages and distances: ', preds)
+        preds = "".join('('+self.lang_ids[r[i][0]]+', '+str(1-r[i][1])+') ' for i in range(3))
+        print('Predicted languages and probabilities: ', preds)
 
     @staticmethod
     def cosine_distance(lang1, lang2):
@@ -100,7 +100,7 @@ class LanguageSimilarity:
 if __name__ == "__main__":
 
     hw_part = ['obvezni', 'dodatni1', 'dodatni2']
-    chosen = hw_part[1]
+    chosen = hw_part[0]
 
     if chosen == 'obvezni':
         print('-------- You selected mandatory part of exercise !')
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         hc.compute_clusters()  # create clusters
         hc.create_dendrogram()  # create dendrogram based on clusters
         hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
-        hc.prepare_visualization()
+        hc.prepare_visualization(9,True)
 
         # Drugi del naloge
         real = ['Japanese', 'Swedish', 'Slovenian', 'Spanish', 'German', 'Icelandic', 'Greek', 'Polish', 'Bulgarian', 'Chinese']
@@ -136,12 +136,12 @@ if __name__ == "__main__":
         hc.compute_clusters()  # create clusters
         hc.create_dendrogram()  # create dendrogram based on clusters
         hc.dendro.create_leaves()  # add leaf nodes to dendrogram (single countries)
-        hc.prepare_visualization()
+        hc.prepare_visualization(9,True)
 
     elif chosen == 'dodatni2':
         print('-------- You selected second bonus part of exercise !')
         # Druga dodatna naloga
-        ls2 = LanguageSimilarity(['German','Finnish', 'Hungarian', 'Persian', 'eng	English'], 'translations/')
+        ls2 = LanguageSimilarity(['Finnish', 'Hungarian', 'Persian', 'German'], 'translations/')
         hc2 = HierarchicalClustering(ls2.languages, ls2.lang_ids, HierarchicalClustering.cosine_distance,
                                     HierarchicalClustering.average_linkage)
         hc2.compute_clusters()  # create clusters

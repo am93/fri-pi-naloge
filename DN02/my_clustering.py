@@ -265,4 +265,4 @@ class Dendrogram:
             Dendrogram.visualize_dendrogram(c,color)
 
         max_height = max(clusters, key=lambda x: x.height).height
-        plt.hlines(max_height+1, -1, len(dendro.key_order), 'r')
+        plt.hlines(max_height+max_height*0.05, -1, len(dendro.key_order), 'r')
