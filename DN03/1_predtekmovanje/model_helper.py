@@ -1,0 +1,234 @@
+from collections import defaultdict
+import numpy
+from scipy.optimize import fmin_l_bfgs_b
+import scipy
+import scipy.sparse
+import gzip, csv
+import scipy.sparse as sp
+import numpy as np
+import lpputils
+from random import shuffle
+from sklearn.metrics import mean_absolute_error
+import matplotlib.cbook as cbook
+import matplotlib.pyplot as plt
+
+DEP_IDX = -3
+ARR_IDX = -1
+DRV_IDX =  1
+BUS_IDX = 0
+
+HOLIDAYS = ['2012-01-01', '2012-01-02', '2012-02-08', '2012-04-09', '2012-04-27', '2012-05-01', '2012-05-02',
+                '2012-05-31', '2012-06-25', '2012-08-15', '2012-10-31', '2012-11-01', '2012-12-25', '2012-12-26']
+SCHOOL_HOL = ['2012-02-20', '2012-02-21', '2012-02-22', '2012-02-23', '2012-02-24', '2012-04-30',
+              '2012-12-24', '2012-12-25', '2012-12-26', '2012-12-27', '2012-12-28', '2012-12-31']
+SUMMER_HOL = ['2012-06-25 00:00:00.000', '2012-08-31 00:00:00.000']
+
+drivers = {}
+buses = {}
+driver_idxs = {}
+buses_idxs = {}
+
+def visualize(train_data, _month, day_s, day_e):
+    """
+    Function which outputs daily travel time by hour (graph + text)
+    """
+    comp_data = []
+    for d in range(day_s,day_e,1):
+        times = np.zeros(24)
+        cnts = np.zeros(24)
+        for row in train_data:
+            date = lpputils.parsedate(row[DEP_IDX])
+            hour = date.hour
+            month = date.month
+            day = date.day
+            if month == _month and day == d:
+                times[hour] += lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX])
+                cnts[hour] += 1
+        norm_times = [float(times[i]) / (float(cnts[i])+0.0000000000001) for i in range(len(times))]
+        comp_data.append(np.asarray(norm_times))
+        print(norm_times)
+    with open('vizualizacija.csv', 'wb') as abc:
+        np.savetxt(abc, np.asarray(comp_data), delimiter=",", fmt="%d")
+
+    data = np.genfromtxt('vizualizacija.csv', delimiter=',')
+    for i in range(len(data)):
+        plt.plot(data[i], label='the data')
+    plt.show()
+
+
+
+def idx_init(data):
+    """
+    Function initializes lookup table for buses and drivers
+    """
+    counterB = 0
+    counterD = 0
+    for row in data:
+        if row[BUS_IDX] not in buses_idxs.keys():
+            buses_idxs[row[BUS_IDX]] = counterB;
+            counterB += 1
+        if row[DRV_IDX] not in driver_idxs.keys():
+            driver_idxs[row[DRV_IDX]] = counterD
+            counterD += 1
+
+
+def driver_average(driver_id=None, data=None):
+    global drivers
+    if driver_id is None:
+        for row in data:
+            if row[DRV_IDX] not in drivers.keys():
+                drivers[row[DRV_IDX]] = [lpputils.tsdiff(row[ARR_IDX],row[DEP_IDX]), 1]
+            else:
+                tmp = drivers[row[DRV_IDX]]
+                tmp[0] = lpputils.tsdiff(row[ARR_IDX],row[DEP_IDX])
+                tmp[1] += 1
+                drivers[row[DRV_IDX]] = tmp
+        tmp = {driver : float(drivers[driver][0]) / float(drivers[driver][1])  for driver in drivers.keys()}
+        drivers = {driver: tmp[driver] / max(tmp.values()) for driver in tmp}
+    else:
+        try:
+            return drivers[driver_id]
+        except KeyError:
+            print(sum(drivers.values()) / float(len(drivers)))
+            return sum(drivers.values()) / float(len(drivers))
+
+
+def bus_average(bus_id=None, data=None):
+    global buses
+    if bus_id is None:
+        for row in data:
+            if row[BUS_IDX] not in buses.keys():
+                buses[row[BUS_IDX]] = [lpputils.tsdiff(row[ARR_IDX],row[DEP_IDX]), 1]
+            else:
+                tmp = buses[row[BUS_IDX]]
+                tmp[0] = lpputils.tsdiff(row[ARR_IDX],row[DEP_IDX])
+                tmp[1] += 1
+                buses[row[BUS_IDX]] = tmp
+        tmp = {bus : float(buses[bus][0]) / float(buses[bus][1])  for bus in buses.keys()}
+        buses = {bus: tmp[bus] / max(tmp.values()) for bus in tmp}
+    else:
+        try:
+            return buses[bus_id]
+        except KeyError:
+            print(sum(buses.values()) / float(len(buses)))
+            return sum(buses.values()) / float(len(buses))
+
+
+def model1(row):
+    """
+    MODEL1 : norm day, norm hour, holiday, school holiday, avg. driver, avg. bus
+    """
+    result = np.zeros(6)
+    result[0] = lpputils.parsedate(row[DEP_IDX]).weekday() / 7.0 # day
+    result[1] =  lpputils.parsedate(row[DEP_IDX]).hour / 24.0 # hour
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+    #summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[2] = holiday
+    result[3] = school_hol
+    #result[4] = summer_hol
+    result[4] = driver_average(row[DRV_IDX])
+    result[5] = bus_average(row[BUS_IDX])
+
+    return result
+
+
+def model2(row):
+    """
+    MODEL2 : binary day and week attributes + holiday (binary)
+    indeksi : 0-6 dnevi, 7-31 ura
+    server: 152.32996
+    lokalno: 129.303771
+    """
+    result = np.zeros(7+24+2)
+
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    result[day] = 1
+    result[7+hour] = 1
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+    # summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-2] = holiday
+    result[-1] = school_hol
+
+    return result
+
+
+def model3(row):
+    """
+    MODEL3 : binary day and week attributes + drivers + buses + holiday
+    indeksi : dnevi, ure, vozniki, busi, pocitnice
+    server: ???
+    lokalno: 129.2525
+    """
+    day_offset = 0
+    hour_offset = 7
+    driver_offset = 31
+    buses_offset = driver_offset + len(driver_idxs)
+    holiday_offset = buses_offset + len(buses_idxs)
+    result = np.zeros(holiday_offset+2)
+
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    result[day_offset + day] = 1
+    result[hour_offset + hour] = 1
+    if row[DRV_IDX] in driver_idxs.keys():
+        result[driver_offset + driver_idxs[row[DRV_IDX]]] = 1
+    if row[BUS_IDX] in buses_idxs.keys():
+        result[buses_offset + buses_idxs[row[BUS_IDX]]] = 1
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+
+    result[-2] = holiday
+    result[-1] = school_hol
+
+    return result
+
+
+def model_init(data_train, name):
+    """
+    Some models need initalization
+    """
+    if name in ['MODEL1']:
+        driver_average(None, data_train)
+        bus_average(None, data_train)
+
+
+def model_getter(name):
+    """
+    Helper function which returns required model row parser
+    """
+    if name is 'MODEL1':
+        return model1
+    elif name is 'MODEL2':
+        return model2
+    elif name is 'MODEL3':
+        return model3
