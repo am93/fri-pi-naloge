@@ -32,6 +32,7 @@ def parse_arso_data():
             padavine = (float(row1[RAIN_IDX]) + float(row2[RAIN_IDX])) / float(2)
             sneg = (float(row1[SNOW_IDX]) + float(row2[SNOW_IDX])) / float(2)
             result[prev_date] = [padavine, sneg]
+            prev_date = row1[DATE_IDX]
         elif len(row1) != 0 and len(row2)  != 0:
             prev_date = row1[DATE_IDX]
     return result

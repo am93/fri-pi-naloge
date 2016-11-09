@@ -11,6 +11,7 @@ from random import shuffle
 from sklearn.metrics import mean_absolute_error
 import matplotlib.cbook as cbook
 import matplotlib.pyplot as plt
+from arso_parser import parse_arso_data
 
 DEP_IDX = -3
 ARR_IDX = -1
@@ -27,15 +28,16 @@ drivers = {}
 buses = {}
 driver_idxs = {}
 buses_idxs = {}
+arso = {}
 
 def visualize(train_data, _month, day_s, day_e):
     """
     Function which outputs daily travel time by hour (graph + text)
     """
     comp_data = []
+    times = np.zeros(24)
+    cnts = np.zeros(24)
     for d in range(day_s,day_e,1):
-        times = np.zeros(24)
-        cnts = np.zeros(24)
         for row in train_data:
             date = lpputils.parsedate(row[DEP_IDX])
             hour = date.hour
@@ -44,15 +46,15 @@ def visualize(train_data, _month, day_s, day_e):
             if month == _month and day == d:
                 times[hour] += lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX])
                 cnts[hour] += 1
-        norm_times = [float(times[i]) / (float(cnts[i])+0.0000000000001) for i in range(len(times))]
-        comp_data.append(np.asarray(norm_times))
-        print(norm_times)
-    with open('vizualizacija.csv', 'wb') as abc:
-        np.savetxt(abc, np.asarray(comp_data), delimiter=",", fmt="%d")
+    norm_times = [float(times[i]) / (float(cnts[i])+0.0000000000001) for i in range(len(times))]
+    #comp_data.append(np.asarray(norm_times))
+    print(norm_times)
+    #with open('vizualizacija.csv', 'wb') as abc:
+    #    np.savetxt(abc, np.asarray(comp_data), delimiter=",", fmt="%d")
 
-    data = np.genfromtxt('vizualizacija.csv', delimiter=',')
-    for i in range(len(data)):
-        plt.plot(data[i], label='the data')
+    #data = np.genfromtxt('vizualizacija.csv', delimiter=',')
+    #for i in range(len(data)):
+    plt.plot(norm_times, label='the data')
     plt.show()
 
 
@@ -160,13 +162,10 @@ def model2(row):
 
     holiday = 0
     school_hol = 0
-    # summer_hol = 0
     if date in HOLIDAYS:
         holiday = 1
     if date in SCHOOL_HOL:
         school_hol = 1
-    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
-        summer_hol = 1
 
     result[-2] = holiday
     result[-1] = school_hol
@@ -213,13 +212,129 @@ def model3(row):
     return result
 
 
+def model4(row):
+    """
+    MODEL4 : binary day and week attributes + all holiday (binary)
+    indeksi : 0-6 dnevi, 7-31 ura, pocitnice 3x
+    server: 150.86627
+    lokalno: 128.68312
+    """
+    result = np.zeros(7 + 24 + 3)
+
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    result[day] = 1
+    result[7 + hour] = 1
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-3] = summer_hol
+    result[-2] = holiday
+    result[-1] = school_hol
+
+    return result
+
+
+def model5(row):
+    """
+    MODEL5 : binary day and week attributes + all holiday (binary)
+    indeksi : 0-6 dnevi, 7-31 ura, pocitnice 3x, padavine
+    server: 150.93264
+    lokalno:  128.67460
+    """
+    global arso
+    result = np.zeros(7 + 24 + 4)
+
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    result[day] = 1
+    result[7 + hour] = 1
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-4] = summer_hol
+    result[-3] = holiday
+    result[-2] = school_hol
+
+    if date.strftime("%Y-%m-%d") in arso.keys():
+        result[-1] = arso[date.strftime("%Y-%m-%d")][0]
+    else:
+        print("No data !!!")
+
+    return result
+
+
+def model6(row):
+    """
+    MODEL6 : binary day and week attributes + all holiday (binary) + rush
+    indeksi : 0-6 dnevi, 7-31 ura, pocitnice 3x, rush1, rush2
+    server: 150.93264
+    lokalno: 128.62572
+    """
+    result = np.zeros(7 + 24 + 5)
+
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    result[day] = 1
+    result[7 + hour] = 1
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-5] = summer_hol
+    result[-4] = holiday
+    result[-3] = school_hol
+
+    if hour >= 3 and hour <= 6:
+        result[-2] = (hour % 3) / 3
+    if hour >= 15 and hour <= 18:
+        result[-1] = (3 - hour % 15) / 3;
+
+    return result
+
+
 def model_init(data_train, name):
     """
     Some models need initalization
     """
+    global arso
     if name in ['MODEL1']:
         driver_average(None, data_train)
         bus_average(None, data_train)
+    if name in ['MODEL5']:
+        arso = parse_arso_data()
+        max_pad = max(arso.values(), key= lambda x: x[0])[0]
+        max_sno = max(arso.values(), key=lambda x: x[1])[1]
+        arso = {key: [arso[key][0] / float(max_pad), arso[key][1] / float(max_sno)] for key in arso.keys()}
 
 
 def model_getter(name):
@@ -232,3 +347,9 @@ def model_getter(name):
         return model2
     elif name is 'MODEL3':
         return model3
+    elif name is 'MODEL4':
+        return model4
+    elif name is 'MODEL5':
+        return model5
+    elif name is 'MODEL6':
+        return model6

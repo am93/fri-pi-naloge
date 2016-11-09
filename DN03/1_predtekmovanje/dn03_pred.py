@@ -12,7 +12,7 @@ from sklearn.metrics import mean_absolute_error
 import model_helper as mh
 import arso_parser as ap
 
-MODEL_NAME = "MODEL3"
+MODEL_NAME = "MODEL6"
 DEP_IDX = -3
 ARR_IDX = -1
 DRV_IDX =  1
@@ -152,10 +152,10 @@ if __name__ == "__main__":
     data_train = read_file("train_pred.csv.gz")
     data_test = read_file("test_pred.csv.gz")
     mh.model_init(data_train,MODEL_NAME)
-    #cross_validate(data_train,3,False)
-    #precomp_prediction(data_train,data_test, "precomp_results6.txt", 0.3)
-    mh.visualize(data_train,1,9,13)
-    ap.parse_arso_data()
+    cross_validate(data_train,3,False)
+    #precomp_prediction(data_train,data_test, "precomp_results8.txt", 0.3)
+    #mh.visualize(data_train,11,1,30)
+    #ap.parse_arso_data()
     print(" -- koncano")
 
 
