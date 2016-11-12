@@ -100,7 +100,7 @@ class LanguageSimilarity:
 if __name__ == "__main__":
 
     hw_part = ['obvezni', 'dodatni1', 'dodatni2']
-    chosen = hw_part[0]
+    chosen = hw_part[2]
 
     if chosen == 'obvezni':
         print('-------- You selected mandatory part of exercise !')

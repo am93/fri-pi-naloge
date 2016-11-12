@@ -321,6 +321,56 @@ def model6(row):
 
     return result
 
+def model7(row):
+    """
+    MODEL7 : binary day and week attributes + all holiday (binary) -> added 20 min interval between 06 and 09
+    indeksi : 0-6 dnevi, 7-37 ura, pocitnice 3x, padavine
+    server: ?
+    lokalno: 128.68
+    """
+    global arso
+    result = np.zeros(7 + 30 + 4)
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    minutes = lpputils.parsedate(row[DEP_IDX]).minute
+    result[day] = 1
+
+    if hour < 6:
+        result[7 + hour] = 1
+    elif 6 <= hour <= 8:
+        offset = (hour - 6) * 2
+        if 0 <= minutes <= 20:
+            result[7 + hour + offset] = 1
+        elif 20 < minutes <= 40:
+            result[7 + hour + offset + 1] = 1
+        elif 40 < minutes <= 59:
+            result[7 + hour + offset + 2] = 1
+    else:
+        result[7 + hour + 6] = 1
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-4] = summer_hol
+    result[-3] = holiday
+    result[-2] = school_hol
+
+    if date.strftime("%Y-%m-%d") in arso.keys():
+        result[-1] = arso[date.strftime("%Y-%m-%d")][0]
+    else:
+        print("No data !!!")
+
+    return result
+
 
 def model_init(data_train, name):
     """
@@ -330,7 +380,7 @@ def model_init(data_train, name):
     if name in ['MODEL1']:
         driver_average(None, data_train)
         bus_average(None, data_train)
-    if name in ['MODEL5']:
+    if name in ['MODEL5', 'MODEL7']:
         arso = parse_arso_data()
         max_pad = max(arso.values(), key= lambda x: x[0])[0]
         max_sno = max(arso.values(), key=lambda x: x[1])[1]
@@ -353,3 +403,5 @@ def model_getter(name):
         return model5
     elif name is 'MODEL6':
         return model6
+    elif name is 'MODEL7':
+        return model7

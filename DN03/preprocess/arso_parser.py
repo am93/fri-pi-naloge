@@ -17,7 +17,7 @@ def read_file(filename):
     """
     Read file and store lines into array for later processing.
     """
-    f = open(filename, "rt")
+    f = open(filename, "rt", encoding="UTF-8")
     reader = csv.reader(f, delimiter=",")
     next(reader) # skip header line
     return list(reader)
@@ -36,4 +36,3 @@ def parse_arso_data():
         elif len(row1) != 0 and len(row2)  != 0:
             prev_date = row1[DATE_IDX]
     return result
-

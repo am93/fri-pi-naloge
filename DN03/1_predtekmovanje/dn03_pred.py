@@ -12,7 +12,7 @@ from sklearn.metrics import mean_absolute_error
 import model_helper as mh
 import arso_parser as ap
 
-MODEL_NAME = "MODEL6"
+MODEL_NAME = "MODEL7"
 DEP_IDX = -3
 ARR_IDX = -1
 DRV_IDX =  1
