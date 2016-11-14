@@ -43,7 +43,7 @@ def visualize(train_data, _month, day_s, day_e):
             hour = date.hour
             month = date.month
             day = date.day
-            if month == _month and day == d:
+            if (month == _month or _month == -1) and day == d:
                 times[hour] += lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX])
                 cnts[hour] += 1
     norm_times = [float(times[i]) / (float(cnts[i])+0.0000000000001) for i in range(len(times))]
@@ -316,8 +316,8 @@ def model6(row):
 
     if hour >= 3 and hour <= 6:
         result[-2] = (hour % 3) / 3
-    if hour >= 15 and hour <= 18:
-        result[-1] = (3 - hour % 15) / 3;
+    if hour >= 14 and hour <= 18:
+        result[-1] = (4 - hour % 14) / 4;
 
     return result
 
@@ -371,6 +371,58 @@ def model7(row):
 
     return result
 
+def model9(row):
+    """
+    MODEL9 : binary day and hour attributes + all holiday (binary) -> added 20 min interval between 06 and 09
+    indeksi : 30 * 7 kombinacije dan ura, pocitnice 3x, padavine
+    server: 145.82494
+    lokalno: 122.3
+    uporaba: rezultati 11,12,13
+    """
+    global arso
+    result = np.zeros(7*30 + 4)
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    minutes = lpputils.parsedate(row[DEP_IDX]).minute
+
+    day_offset = 30 * day
+
+    if hour < 6:
+        result[day_offset + hour] = 1
+    elif 6 <= hour <= 8:
+        offset = (hour - 6) * 2
+        if 0 <= minutes <= 20:
+            result[day_offset + hour + offset] = 1
+        elif 20 < minutes <= 40:
+            result[day_offset + hour + offset + 1] = 1
+        elif 40 < minutes <= 59:
+            result[day_offset + hour + offset + 2] = 1
+    else:
+        result[day_offset + hour + 6] = 1
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-4] = summer_hol
+    result[-3] = holiday
+    result[-2] = school_hol
+
+    if date.strftime("%Y-%m-%d") in arso.keys():
+        result[-1] = arso[date.strftime("%Y-%m-%d")][0]
+    else:
+        print("No data !!!")
+
+    return result
+
 
 def model_init(data_train, name):
     """
@@ -380,7 +432,7 @@ def model_init(data_train, name):
     if name in ['MODEL1']:
         driver_average(None, data_train)
         bus_average(None, data_train)
-    if name in ['MODEL5', 'MODEL7']:
+    if name in ['MODEL5', 'MODEL7', 'MODEL9']:
         arso = parse_arso_data()
         max_pad = max(arso.values(), key= lambda x: x[0])[0]
         max_sno = max(arso.values(), key=lambda x: x[1])[1]
@@ -405,3 +457,5 @@ def model_getter(name):
         return model6
     elif name is 'MODEL7':
         return model7
+    elif name is 'MODEL9':
+        return model9
