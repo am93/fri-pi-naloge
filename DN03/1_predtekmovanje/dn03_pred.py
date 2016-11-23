@@ -10,9 +10,9 @@ import lpputils
 from random import shuffle
 from sklearn.metrics import mean_absolute_error
 import model_helper as mh
-import arso_parser as ap
+from sklearn.neural_network import MLPRegressor
 
-MODEL_NAME = "MODEL9"
+MODEL_NAME = "MODEL10"
 DEP_IDX = -3
 ARR_IDX = -1
 DRV_IDX =  1
@@ -147,13 +147,45 @@ class LinearRegClassifier(object):
         x = numpy.hstack(([1.], x))
         return hl(x, self.th)
 
+
+
+def prepare_NN_data(data, test=False):
+    X, y = [], []
+    for row in data:
+        X.append(parse_row(row))
+        if not test:
+            y.append(lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX]))
+
+    X = scipy.sparse.csr_matrix(X)
+    y = np.array(y)
+    return X,y
+
+
+def comp_prediction_neural(data_train, data_test, outfile):
+    X_train, y_train = prepare_NN_data(data_train, False)
+    X_test, _ = prepare_NN_data(data_test, True)
+
+    mlpr = MLPRegressor(hidden_layer_sizes=(300,),activation='tanh')
+    mlpr.fit(X_train,y_train)
+    pred = mlpr.predict(X_test)
+
+    print("Mreza narejena ....")
+
+    out_file = open(outfile, "wt")
+    st = 0
+    for row in data_test:
+        out_file.write(lpputils.tsadd(row[DEP_IDX],pred[st]) + "\n")
+        st += 1
+    out_file.close()
+
 if __name__ == "__main__":
     print("Testiranje za predtekomvanje ...")
     data_train = read_file("train_pred.csv.gz")
     data_test = read_file("test_pred.csv.gz")
     mh.model_init(data_train,MODEL_NAME)
     #cross_validate(data_train,3,False)
-    precomp_prediction(data_train,data_test, "precomp_results13.txt", 0.3)
+    #comp_prediction_neural(data_train, data_test, "nn_test2.txt")
+    precomp_prediction(data_train,data_test, "precomp_results14.txt", 0.3)
     #mh.visualize(data_train,-1,1,30)
     #ap.parse_arso_data()
     print(" -- koncano")

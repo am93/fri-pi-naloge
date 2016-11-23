@@ -482,9 +482,9 @@ def model9(row):
     result[-3] = school_hol
 
     if date.strftime("%Y-%m-%d") in arso.keys():
-        result[-2] = arso[date.strftime("%Y-%m-%d")][0]
+        result[-2] = 1 if arso[date.strftime("%Y-%m-%d")][0] > 20 else 0
     else:
-        print("No data !!!")
+        print("No data for weather !!!")
 
     line = row[2]
     if row[3][0:2] in ['B ', 'G ', 'I ', 'Z ']:

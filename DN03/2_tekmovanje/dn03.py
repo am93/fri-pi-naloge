@@ -9,8 +9,8 @@ import numpy as np
 import lpputils
 from random import shuffle
 from sklearn.metrics import mean_absolute_error
+from sklearn.neural_network import MLPRegressor
 import model_helper as mh
-import arso_parser as ap
 
 MODEL_NAME = "MODEL9"
 DEP_IDX = -3
@@ -113,7 +113,7 @@ def line_identifier(row):
     Creates line identifier based on single row of data.
     Identifier consist of route number, direction, identifier and first station.
     """
-    return tuple(row[2:5])
+    return tuple(row[2:6])
 
 class LinearLearner(object):
 
@@ -185,7 +185,7 @@ class LineSpecificClassifier(object):
             closest = find_closest_line(line_identifier(x), self.line_class.keys())
             if closest != None:
                 print("Found similar - {0}".format(closest))
-                return self.line_class[closest](x) # try with closest line
+                return self.line_class[closest](x)# try with closest line
             else:
                 return np.mean([c(x) for c in self.line_class.values()]) # exception: new line - take average
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     print("Podatki prebrani ...")
     mh.model_init(data_train,MODEL_NAME)
     #cross_validate(data_train,3,False)
-    comp_prediction(data_train,data_test, "comp_results9.txt", 0.3)
+    comp_prediction(data_train,data_test, "comp_results13.txt", 0.3)
     #mh.visualize(data_train,11,1,30)
     #ap.parse_arso_data()
     print(" -- koncano")

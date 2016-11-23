@@ -7,7 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/DN03/preprocess" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/DN03/1_predtekmovanje" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.5.1 (C:\Python35\python.exe)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.5.2 (C:\Python35\python.exe)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

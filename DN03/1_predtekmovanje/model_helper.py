@@ -423,6 +423,63 @@ def model9(row):
 
     return result
 
+def model10(row):
+    """
+    MODEL10 : binary day and hour attributes + all holiday (binary) + drivers-> added 20 min interval between 06 and 09
+    indeksi : 30 * 7 kombinacije dan ura, vozniki, pocitnice 3x, padavine
+    server: 145.82494
+    lokalno: 122.3
+    uporaba: rezultati 11,12,13
+    """
+    global arso
+    result = np.zeros(7*30 + len(driver_idxs) + 4)
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    minutes = lpputils.parsedate(row[DEP_IDX]).minute
+
+    day_offset = 30 * day
+
+    if hour < 6:
+        result[day_offset + hour] = 1
+    elif 6 <= hour <= 8:
+        offset = (hour - 6) * 2
+        if 0 <= minutes <= 20:
+            result[day_offset + hour + offset] = 1
+        elif 20 < minutes <= 40:
+            result[day_offset + hour + offset + 1] = 1
+        elif 40 < minutes <= 59:
+            result[day_offset + hour + offset + 2] = 1
+    else:
+        result[day_offset + hour + 6] = 1
+
+    driver_offset = 7 * 30
+
+    if row[DRV_IDX] in driver_idxs.keys():
+        result[driver_offset + driver_idxs[row[DRV_IDX]]] = 1
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-4] = summer_hol
+    result[-3] = holiday
+    result[-2] = school_hol
+
+    #if date.strftime("%Y-%m-%d") in arso.keys():
+    #    result[-1] = max([arso[date.strftime("%Y-%m-%d")][0],0])
+    #else:
+    #    print("No data !!!")
+
+    return result
+
 
 def model_init(data_train, name):
     """
@@ -432,7 +489,8 @@ def model_init(data_train, name):
     if name in ['MODEL1']:
         driver_average(None, data_train)
         bus_average(None, data_train)
-    if name in ['MODEL5', 'MODEL7', 'MODEL9']:
+    if name in ['MODEL5', 'MODEL7', 'MODEL9','MODEL10']:
+        idx_init(data_train)
         arso = parse_arso_data()
         max_pad = max(arso.values(), key= lambda x: x[0])[0]
         max_sno = max(arso.values(), key=lambda x: x[1])[1]
@@ -459,3 +517,16 @@ def model_getter(name):
         return model7
     elif name is 'MODEL9':
         return model9
+    elif name is 'MODEL10':
+        return model10
+
+def outprint_model(model_data, target_val, names, filename):
+    """
+    Function prints current model to csv file.
+    """
+    f = open(filename, "w", encoding="UTF-8")
+    f.write("".join(name+"," for name in names)[:-1]+"\n")
+    for (row,tv) in zip(model_data,target_val):
+        f.write("".join(str(data)+"," for data in row))
+        f.write(str(tv)+"\n")
+    f.close()

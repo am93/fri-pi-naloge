@@ -25,9 +25,11 @@ def read_file(filename):
 
 def parse_detour_data():
     result = defaultdict(list)
-    prev_date = ""
     data = read_file("..\\preprocess\\obvozi.txt")
     for row in data:
+        result[row[LINE_IDX]].append([row[DATE_S_IDX],row[DATE_E_IDX]])
+    data2 = read_file("..\\preprocess\\detours2.csv")
+    for row in data2:
         result[row[LINE_IDX]].append([row[DATE_S_IDX],row[DATE_E_IDX]])
     return result
 
