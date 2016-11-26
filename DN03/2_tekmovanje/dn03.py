@@ -9,7 +9,7 @@ import numpy as np
 import lpputils
 from random import shuffle
 from sklearn.metrics import mean_absolute_error
-from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import RandomForestRegressor
 import model_helper as mh
 
 MODEL_NAME = "MODEL9"
@@ -99,12 +99,15 @@ def cross_validate(data, k=3, cons=True):
 
 
 def comp_prediction(data_train, data_test, outfile, lamb=0.3):
-    lin_l = LineSpecificLearner(LinearLearner(lamb))
-    lin_c = lin_l(data_train)
+    #lin_l = LineSpecificLearner(LinearLearner(lamb))
+    #lin_c = lin_l(data_train)
+
+    rf_l = LineSpecificLearner(RFRegressorLearner())
+    rf_c = rf_l(data_train)
 
     out_file = open(outfile, "wt")
     for row in data_test:
-        out_file.write(lpputils.tsadd(row[DEP_IDX], lin_c(row)) + "\n")
+        out_file.write(lpputils.tsadd(row[DEP_IDX], rf_c(row)) + "\n")
     out_file.close()
 
 
@@ -114,6 +117,35 @@ def line_identifier(row):
     Identifier consist of route number, direction, identifier and first station.
     """
     return tuple(row[2:6])
+
+
+class RFRegressorLearner(object):
+
+    def __init__(self, n_tree=50, crit='mae', threads=-1, depth=3):
+        self.regressor = RandomForestRegressor(n_estimators=n_tree, criterion=crit, n_jobs=threads, max_depth=depth)
+
+    def __call__(self, data):
+        X, y = [], []
+        for row in data:
+            X.append(parse_row(row))
+            y.append(lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX]))
+
+        X = scipy.sparse.csr_matrix(X)
+        y = np.array(y)
+
+        self.regressor.fit(X, y)
+        print("Regressor has been fitted !")
+        return RFRegressorPredictor(self.regressor)
+
+
+class RFRegressorPredictor(object):
+    def __init__(self, regressor):
+        self.regressor = regressor
+
+    def __call__(self, x):
+        return self.regressor.predict(x)[0]
+
+
 
 class LinearLearner(object):
 
@@ -166,8 +198,11 @@ class LineSpecificLearner(object):
         for row in data:
             line_data[line_identifier(row)].append(row)
 
+        print("Data has been splitted by lines!")
+
         # create classifiers for each lane
         for key in line_data.keys():
+            print("Working on ", key, " size ",str(len(line_data[key])))
             line_class[key] = self.learner(line_data[key])
         return LineSpecificClassifier(line_class)
 
