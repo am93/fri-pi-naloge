@@ -445,7 +445,7 @@ def model9(row):
     uporaba: rezultati 8, 9(+45 sekund na linijo 1), 10(+65 sekund na linijo 1)
     """
     global arso
-    result = np.zeros(7*30 + 4)
+    result = np.zeros(7*30 + 5)
 
     date = lpputils.parsedate(row[DEP_IDX]).date()
     day = lpputils.parsedate(row[DEP_IDX]).weekday()

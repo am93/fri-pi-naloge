@@ -78,11 +78,11 @@ def cross_validate(data, k=3, cons=True):
     """
     Implementation of cross validation.
     """
-    new_data = cv_data_split(data, k, cons) # split data
     lamb = numpy.arange(0.1, 0.6, 0.1)
 
     for l_idx in range(len(lamb)):
         errors = []
+        new_data = cv_data_split(data, k, cons)  # split data
         for idx in range(len(new_data)):
             train_data = [d for i in range(len(new_data)) if i != idx for d in new_data[i]] # flatten array
             test_data = new_data[idx]
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     print("Podatki prebrani ...")
     mh.model_init(data_train,MODEL_NAME)
     #cross_validate(data_train,3,False)
-    comp_prediction(data_train,data_test, "comp_results13.txt", 0.3)
+    comp_prediction(data_train,data_test, "comp_results15.txt", 3)
     #mh.visualize(data_train,11,1,30)
     #ap.parse_arso_data()
     print(" -- koncano")
