@@ -61,6 +61,18 @@ def visualize(train_data, _month, day_s, day_e):
     plt.show()
 
 
+def model_to_csv(train_data, filename):
+
+    file = open(filename, 'w')
+    file.write('line,month,day,hour,travel\n')
+    for row in train_data:
+        date = lpputils.parsedate(row[DEP_IDX])
+        hour = date.hour
+        day = date.weekday()
+        month = date.month
+        travel = lpputils.tsdiff(row[ARR_IDX], row[DEP_IDX])
+        file.write('{0},{1},{2},{3},{4}\n'.format(row[2],month,day,hour,travel))
+
 
 def idx_init(data):
     """
@@ -493,6 +505,56 @@ def model9(row):
 
     return result
 
+def model10(row):
+    """
+    MODEL10 : binary day and hour attributes + all holiday (binary) -> added 20 min interval between 06 and 09
+    indeksi : 24 * 7 * 4 kombinacije dan ura, pocitnice 3x, padavine, detour
+    """
+    global arso
+    result = np.zeros(7*24*4 + 5)
+
+    date = lpputils.parsedate(row[DEP_IDX]).date()
+    day = lpputils.parsedate(row[DEP_IDX]).weekday()
+    hour = lpputils.parsedate(row[DEP_IDX]).hour
+    minutes = lpputils.parsedate(row[DEP_IDX]).minute
+
+    day_offset = (24*4) * day
+
+    if 0 <= minutes <= 15:
+        result[day_offset + hour*4] = 1
+    elif 15 < minutes <= 30:
+        result[day_offset + hour*4 + 1] = 1
+    elif 30 < minutes <= 45:
+        result[day_offset + hour*4 + 2] = 1
+    elif 45 < minutes <= 59:
+        result[day_offset + hour*4 + 3] = 1
+
+    holiday = 0
+    school_hol = 0
+    summer_hol = 0
+    if date in HOLIDAYS:
+        holiday = 1
+    if date in SCHOOL_HOL:
+        school_hol = 1
+    if lpputils.parsedate(SUMMER_HOL[0]).date() <= date <= lpputils.parsedate(SUMMER_HOL[1]).date():
+        summer_hol = 1
+
+    result[-5] = summer_hol
+    result[-4] = holiday
+    result[-3] = school_hol
+
+    if date.strftime("%Y-%m-%d") in arso.keys():
+        result[-2] = 1 if arso[date.strftime("%Y-%m-%d")][0] > 20 else 0
+    else:
+        print("No data for weather !!!")
+
+    line = row[2]
+    if row[3][0:2] in ['B ', 'G ', 'I ', 'Z ']:
+        line += row[3][0]
+    result[-1] = check_detour(line, row[DEP_IDX], detours)
+
+    return result
+
 def model_init(data_train, name):
     """
     Some models need initalization
@@ -502,7 +564,7 @@ def model_init(data_train, name):
     if name in ['MODEL1']:
         driver_average(None, data_train)
         bus_average(None, data_train)
-    if name in ['MODEL5', 'MODEL7', 'MODEL8','MODEL9']:
+    if name in ['MODEL5', 'MODEL7', 'MODEL8','MODEL9','MODEL10']:
         arso = parse_arso_data()
         max_pad = max(arso.values(), key= lambda x: x[0])[0]
         max_sno = max(arso.values(), key=lambda x: x[1])[1]
@@ -532,3 +594,5 @@ def model_getter(name):
         return model8
     elif name is 'MODEL9':
         return model9
+    elif name is 'MODEL10':
+        return model10

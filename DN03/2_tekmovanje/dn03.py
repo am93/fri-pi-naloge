@@ -12,7 +12,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
 import model_helper as mh
 
-MODEL_NAME = "MODEL9"
+MODEL_NAME = "MODEL10"
 DEP_IDX = -3
 ARR_IDX = -1
 DRV_IDX =  1
@@ -78,7 +78,7 @@ def cross_validate(data, k=3, cons=True):
     """
     Implementation of cross validation.
     """
-    lamb = numpy.arange(0.1, 0.6, 0.1)
+    lamb = numpy.arange(0.1, 1, 0.2)
 
     for l_idx in range(len(lamb)):
         errors = []
@@ -99,15 +99,15 @@ def cross_validate(data, k=3, cons=True):
 
 
 def comp_prediction(data_train, data_test, outfile, lamb=0.3):
-    #lin_l = LineSpecificLearner(LinearLearner(lamb))
-    #lin_c = lin_l(data_train)
+    lin_l = LineSpecificLearner(LinearLearner(lamb))
+    lin_c = lin_l(data_train)
 
-    rf_l = LineSpecificLearner(RFRegressorLearner())
-    rf_c = rf_l(data_train)
+    #rf_l = LineSpecificLearner(RFRegressorLearner())
+    #rf_c = rf_l(data_train)
 
     out_file = open(outfile, "wt")
     for row in data_test:
-        out_file.write(lpputils.tsadd(row[DEP_IDX], rf_c(row)) + "\n")
+        out_file.write(lpputils.tsadd(row[DEP_IDX], lin_c(row)) + "\n")
     out_file.close()
 
 
@@ -121,7 +121,7 @@ def line_identifier(row):
 
 class RFRegressorLearner(object):
 
-    def __init__(self, n_tree=50, crit='mae', threads=-1, depth=3):
+    def __init__(self, n_tree=30, crit='mae', threads=4, depth=7):
         self.regressor = RandomForestRegressor(n_estimators=n_tree, criterion=crit, n_jobs=threads, max_depth=depth)
 
     def __call__(self, data):
@@ -243,8 +243,9 @@ if __name__ == "__main__":
     data_test = read_file("test.csv.gz")
     print("Podatki prebrani ...")
     mh.model_init(data_train,MODEL_NAME)
+    #mh.model_to_csv(data_train, 'podatki.csv')
     #cross_validate(data_train,3,False)
-    comp_prediction(data_train,data_test, "comp_results15.txt", 3)
+    comp_prediction(data_train,data_test, "comp_results18.txt", 0.3)
     #mh.visualize(data_train,11,1,30)
     #ap.parse_arso_data()
     print(" -- koncano")
