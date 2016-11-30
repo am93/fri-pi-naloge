@@ -75,6 +75,19 @@ def CA(real, predictions):
 
     return result / len(predictions)
 
+def AUC(real, predicitions):
+    """
+    Function computes area under curve. Real is a list of "1" and "0" and represent real class.
+    Predicitions is list of sublist, where each sublist contains probability for class "0" and "1".
+    """
+    class_prob = [x for [_,x] in predicitions]
+    zipped = sorted(zip(real, class_prob), key=operator.itemgetter(1), reverse=True)
+    pos = [p[1] for p in zipped if p[0] == 1]
+    neg = [n[1] for n in zipped if n[0] == 0]
+
+    return 1.0 / (len(pos) * len(neg)) * sum([1 for p in pos for n in neg if p > n])
+
+
 class LogRegClassifier(object):
 
     def __init__(self, th):
@@ -123,12 +136,20 @@ if __name__ == "__main__":
     print(prediction)
 
     # check all predicitions from example data (without regularization)
-    for (i,ex) in enumerate(X):
-        pred, prob = max(enumerate(classifier(ex)), key=operator.itemgetter(1))
-        print("Pred:{0}, Real:{2}, Prob:{1}".format(pred, prob, y[i]))
+    #for (i,ex) in enumerate(X):
+    #    pred, prob = max(enumerate(classifier(ex)), key=operator.itemgetter(1))
+    #    print("Pred:{0}, Real:{2}, Prob:{1}".format(pred, prob, y[i]))
 
     # draw
     # TODO: test regularization with different lambda values (report three most interesting images)
-    draw_decision(X, y, classifier, 0, 1)
+    #draw_decision(X, y, classifier, 0, 1)
 
+    # AUC test
+    # DONE: vrne iste rezultate kot sklearn.metrics.roc_auc_score
+    y_real1 = [1,1,1,0,0,0]
+    y_pred1 = [[0, 1], [0.3, 0.7], [0.4, 0.6], [0.5, 0.5], [0.6, 0.4], [1.0, 0.0]]
+    y_real2 = [1,1,0,1,0,0]
+    y_pred2 = [[0, 1], [0.1, 0.9], [0.4, 0.6], [0.5, 0.5], [0.8, 0.2], [1.0, 0.0]]
+    print(AUC(y_real1,y_pred1))
+    print(AUC(y_real2,y_pred2))
 
