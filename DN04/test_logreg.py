@@ -2,7 +2,7 @@ import unittest
 import numpy
 
 # To import your solution modify the next row:
-from solution import *
+from naloga4 import *
 
 class TestLogisticRegression(unittest.TestCase):
 

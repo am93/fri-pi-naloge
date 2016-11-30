@@ -1,4 +1,5 @@
 import pylab
+import numpy
 
 def draw_decision(X, y, classifier, at1, at2, grid=50):
 
@@ -34,11 +35,4 @@ def draw_decision(X, y, classifier, at1, at2, grid=50):
     pylab.ylabel(at2)
 
     pylab.show()
-
-X,y = load('reg.data')
-
-learner = LogRegLearner(lambda_=0.)
-classifier = learner(X,y)
-
-draw_decision(X, y, classifier, 0, 1)
 
