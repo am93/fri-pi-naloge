@@ -1,4 +1,6 @@
 import unittest
+import random
+from sklearn.metrics import roc_auc_score
 
 # To import your solution modify the next row:
 from naloga4 import *
@@ -67,6 +69,14 @@ class TestLogisticRegression(unittest.TestCase):
     
         if signatures != list(map(lambda x: sum(list(x)), X)):
             raise MixedOrder()
+
+    def test_auc(self):
+        y_real = [random.randint(0,1) for i in range(20)]
+        y_pred_my = [[0, random.uniform(0, 1)] for _ in range(20)]
+        y_pred_builtin = [x[1] for x in y_pred_my]
+        y_pred_my = [[1-x[1],x[1]] for x in y_pred_my]
+
+        self.assertAlmostEqual(float(roc_auc_score(y_real, y_pred_builtin)), AUC(y_real, y_pred_my), places=10)
 
 if __name__ == '__main__':
     unittest.main()

@@ -85,6 +85,10 @@ def AUC(real, predicitions):
     pos = [p[1] for p in zipped if p[0] == 1]
     neg = [n[1] for n in zipped if n[0] == 0]
 
+    if len(pos) == 0 or len(neg) == 0:
+        print("AUC not defined if only single class is present !")
+        return -1
+
     return 1.0 / (len(pos) * len(neg)) * sum([1 for p in pos for n in neg if p > n])
 
 
@@ -128,6 +132,7 @@ if __name__ == "__main__":
     #
 
     X,y = load('reg.data')
+    X_img, y_img = load('slike_znacilke.csv')
 
     learner = LogRegLearner(lambda_=0.0)
     classifier = learner(X,y) # we get a model
