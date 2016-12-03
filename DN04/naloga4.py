@@ -44,6 +44,15 @@ def grad(theta, X, y, lambda_):
     return 1.0 / X.shape[0] * (h(X,theta) - y).dot(X) + regularize
 
 
+def test_learning(learner, X, y):
+    """
+    Incorrect approach - here just for demonstration
+    """
+    c = learner(X,y)
+    results = [ c(x) for x in X ]
+    return results
+
+
 def test_cv(learner, X, y, k=5):
     """
     Implementation of k-fold cross validation, which returns predictions in the same order as in X. Function
@@ -54,9 +63,9 @@ def test_cv(learner, X, y, k=5):
 
     predictions = []
 
-    for crr_x, crr_y in zip(x_splits, y_splits):
-        train_x = numpy.vstack([x for x in x_splits if (x - crr_x).any()]) # current split is only for prediction
-        train_y = numpy.hstack([y for y in y_splits if (y - crr_y).any()]) # current split is only for prediciton
+    for crr_i, (crr_x, crr_y) in enumerate(zip(x_splits, y_splits)):
+        train_x = numpy.vstack([x for i,x in enumerate(x_splits) if i != crr_i]) # current split is only for prediction
+        train_y = numpy.hstack([y for i,y in enumerate(y_splits) if i != crr_i]) # current split is only for prediciton
         predictor = learner(train_x, train_y)
         predictions += [predictor(crr_x[i]) for i in range(len(crr_y))]
 
@@ -90,6 +99,32 @@ def AUC(real, predicitions):
         return -1
 
     return 1.0 / (len(pos) * len(neg)) * sum([1 for p in pos for n in neg if p > n])
+
+
+def test_model_regularization(X,y, k=5):
+    """
+    Function tests our model with different values of lambda for regularization and reports CA and AUC
+    for incorrect and correct approach (cross-validation).
+    """
+    lambdas = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.25, 0.35, 0.5, 0.75, 1, 3, 5, 10, 20, 50, 100, 500]
+    for l in lambdas:
+        print("Testing with lambda = {0}".format(l))
+        learner = LogRegLearner(lambda_=l)
+
+        # make predicitions
+        learn_pred = test_learning(learner, X, y)
+        cv_pred = test_cv(learner, X,y, k)
+
+        # evaluate predicitions
+        ca_learn = CA(y, learn_pred)
+        ca_cv = CA(y, cv_pred)
+        auc_learn = AUC(y, learn_pred)
+        auc_cv = AUC(y, cv_pred)
+
+        # report
+        print("--> Predictions on learning - CA: {0}, AUC: {1}".format(ca_learn,auc_learn))
+        print("--> 5-fold cross validation - CA: {0}, AUC: {1}".format(ca_cv, auc_cv))
+
 
 
 class LogRegClassifier(object):
@@ -127,34 +162,19 @@ class LogRegLearner(object):
         return LogRegClassifier(theta)
 
 if __name__ == "__main__":
-    #
-    # Usage example
-    #
-
+    # load data
     X,y = load('reg.data')
     X_img, y_img = load('slike_znacilke.csv')
 
-    learner = LogRegLearner(lambda_=0.0)
-    classifier = learner(X,y) # we get a model
-
-    prediction = classifier(X[0]) # prediction for the first training example
-    print(prediction)
+    test_model_regularization(X,y)
 
     # check all predicitions from example data (without regularization)
+    #learner = LogRegLearner(lambda_=0.)
+    #classifier = learner(X_img, y_img)  # we get a model
     #for (i,ex) in enumerate(X):
     #    pred, prob = max(enumerate(classifier(ex)), key=operator.itemgetter(1))
     #    print("Pred:{0}, Real:{2}, Prob:{1}".format(pred, prob, y[i]))
 
     # draw
-    # TODO: test regularization with different lambda values (report three most interesting images)
     #draw_decision(X, y, classifier, 0, 1)
-
-    # AUC test
-    # DONE: vrne iste rezultate kot sklearn.metrics.roc_auc_score
-    y_real1 = [1,1,1,0,0,0]
-    y_pred1 = [[0, 1], [0.3, 0.7], [0.4, 0.6], [0.5, 0.5], [0.6, 0.4], [1.0, 0.0]]
-    y_real2 = [1,1,0,1,0,0]
-    y_pred2 = [[0, 1], [0.1, 0.9], [0.4, 0.6], [0.5, 0.5], [0.8, 0.2], [1.0, 0.0]]
-    print(AUC(y_real1,y_pred1))
-    print(AUC(y_real2,y_pred2))
 
