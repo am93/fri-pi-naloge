@@ -106,7 +106,7 @@ def test_model_regularization(X,y, k=5):
     Function tests our model with different values of lambda for regularization and reports CA and AUC
     for incorrect and correct approach (cross-validation).
     """
-    lambdas = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.25, 0.35, 0.5, 0.75, 1, 3, 5, 10, 20, 50, 100, 500]
+    lambdas = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.25, 0.35, 0.5, 0.75, 1, 3, 5, 10, 20, 50, 100, 500, 1000, 5000]
     for l in lambdas:
         print("Testing with lambda = {0}".format(l))
         learner = LogRegLearner(lambda_=l)
@@ -124,6 +124,9 @@ def test_model_regularization(X,y, k=5):
         # report
         print("--> Predictions on learning - CA: {0}, AUC: {1}".format(ca_learn,auc_learn))
         print("--> 5-fold cross validation - CA: {0}, AUC: {1}".format(ca_cv, auc_cv))
+        # outprint for report table only !
+        #print("{0} & {1:2.4f} & {2:2.4f} & {3:2.4f} & {4:2.4f} \\\\".format(l,ca_learn,ca_cv,auc_learn,auc_cv))
+        #print("{0} & {1:2.4f} & {2:2.4f} \\\\".format(l,ca_cv,auc_cv))
 
 
 
@@ -166,15 +169,17 @@ if __name__ == "__main__":
     X,y = load('reg.data')
     X_img, y_img = load('slike_znacilke.csv')
 
-    test_model_regularization(X,y)
+    # testing different lambda parameters
+    test_model_regularization(X_img,y_img)
 
     # check all predicitions from example data (without regularization)
-    #learner = LogRegLearner(lambda_=0.)
-    #classifier = learner(X_img, y_img)  # we get a model
+    learner = LogRegLearner(lambda_=100)
+    classifier = learner(X_img, y_img)  # we get a model
+
     #for (i,ex) in enumerate(X):
     #    pred, prob = max(enumerate(classifier(ex)), key=operator.itemgetter(1))
     #    print("Pred:{0}, Real:{2}, Prob:{1}".format(pred, prob, y[i]))
 
     # draw
-    #draw_decision(X, y, classifier, 0, 1)
+    draw_decision(X_img, y_img, classifier, 0, 1)
 
