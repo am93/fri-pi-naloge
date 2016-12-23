@@ -78,6 +78,10 @@ def task1_rs_average(users, movies, train_avg, correction=True):
 
 
 def task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs):
+    """
+    Implementation of second task in homework. Recomendation is based on movie similarity, with cosine
+    similarity used as measure.
+    """
     predict = []
     actual = []
     with open('movielens-100k-test.tab') as test_file:
@@ -116,13 +120,59 @@ def task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs):
     return actual, predict
 
 
+def matrix_factorization(data, user_idxs, mov_idxs, iters=100, k=2, _lambda=0.005, _eps=0.0):
+    """
+    Implementation of matrix factorization. Parameter lambda represents learning rate and parameter
+    eps degree of regularization. Matrices P and Q are initialized to some small random values.
+    Than we iterate multiple times through train set and use gradient descent to minimize errors
+    between original matrix R and P*Q.
+    """
+    P = np.random.uniform(-0.01, 0.01, [len(user_idxs.keys()), k])
+    Q = np.random.uniform(-0.01, 0.01, [k, len(mov_idxs.keys())])
+
+    for _ in range(iters):
+        with open('movielens-100k-train.tab', encoding = "ISO-8859-1") as train_file:
+            for line in train_file:
+                u, m, r = line.rstrip().split('\t')
+                u_idx = user_idxs[u]
+                m_idx = mov_idxs[m]
+                err = data[(u, m)] - Q.T[m_idx, :].dot(P[u_idx, :])
+                for x in range(k):
+                    P[u_idx][x] += _lambda* (err * Q[x][m_idx] - _eps * P[u_idx][x])
+                    Q[x][m_idx] += _lambda * (err * P[u_idx][x] - _eps * Q[x][m_idx])
+
+    return P, Q
+
+
+def task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q):
+    predict, actual = [], []
+
+    with open('movielens-100k-test.tab', encoding='ISO-8859-1') as test_file:
+        for line in test_file:
+            u, m, r = line.rstrip().split('\t')
+            actual.append(int(r))
+            # movie not present, take user average
+            if m not in m_idxs.keys():
+                predict.append(u_avgs[u_idxs[user]])
+                continue
+
+            u_idx = u_idxs[u]
+            m_idx = m_idxs[m]
+
+            # make a predicition (keep it in range 1-5)
+            pr = min(5, max(0, Q.T[m_idx].dot(P[u_idx])))
+            predict.append(pr)
+
+    return actual, predict
+
+
 if __name__ == '__main__':
     users = defaultdict(list)
     movies = defaultdict(list)
     data = defaultdict(int)
     train_all = []
 
-    with open('movielens-100k-train.tab') as train_file:
+    with open('movielens-100k-train.tab', encoding = "ISO-8859-1") as train_file:
         for line in train_file:
             user, movie, rating = line.rstrip().split('\t')
             train_all.append(int(rating))
@@ -137,5 +187,10 @@ if __name__ == '__main__':
     # Task2
     matrix, u_idxs, m_idxs = create_user_movie_matrix(data, users, movies)
     u_avgs = average_user_scores(users, u_idxs)
-    rmse2 = rmse(*task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs))
-    print(rmse2)
+    #rmse2 = rmse(*task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs))
+    #print(rmse2)
+
+    # Task3
+    P, Q = matrix_factorization(data, u_idxs, m_idxs, k=7)
+    rmse3 = rmse(*task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q))
+    print(rmse3)
