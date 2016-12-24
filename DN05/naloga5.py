@@ -3,10 +3,28 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics.pairwise import cosine_similarity
 from math import sqrt
+from matplotlib import pyplot as plt
+from random import random
+import matplotlib.cm as cmx
+import matplotlib.colors as colors
 
 __author__ = "Anze Medved, 63120191"
 __email__ = "am1947@student.uni-lj.si"
 __course__ = "Poslovna inteligenca"
+
+
+def random_color():
+    return (random(), random(), random())
+
+
+def get_cmap(N):
+    '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct
+    RGB color.'''
+    color_norm  = colors.Normalize(vmin=0, vmax=N-1)
+    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv')
+    def map_index_to_rgb_color(index):
+        return scalar_map.to_rgba(index)
+    return map_index_to_rgb_color
 
 
 def rmse(actual, predict):
@@ -120,7 +138,7 @@ def task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs):
     return actual, predict
 
 
-def matrix_factorization(data, user_idxs, mov_idxs, iters=100, k=2, _lambda=0.005, _eps=0.0):
+def matrix_factorization(data, user_idxs, mov_idxs, iters=300, k=2, _lambda=0.001, _eps=0.03):
     """
     Implementation of matrix factorization. Parameter lambda represents learning rate and parameter
     eps degree of regularization. Matrices P and Q are initialized to some small random values.
@@ -131,15 +149,19 @@ def matrix_factorization(data, user_idxs, mov_idxs, iters=100, k=2, _lambda=0.00
     Q = np.random.uniform(-0.01, 0.01, [k, len(mov_idxs.keys())])
 
     for _ in range(iters):
+        total_err = []
         with open('movielens-100k-train.tab', encoding = "ISO-8859-1") as train_file:
             for line in train_file:
                 u, m, r = line.rstrip().split('\t')
                 u_idx = user_idxs[u]
                 m_idx = mov_idxs[m]
                 err = data[(u, m)] - Q.T[m_idx, :].dot(P[u_idx, :])
+                total_err += [err]
                 for x in range(k):
                     P[u_idx][x] += _lambda* (err * Q[x][m_idx] - _eps * P[u_idx][x])
                     Q[x][m_idx] += _lambda * (err * P[u_idx][x] - _eps * Q[x][m_idx])
+
+        #print(np.average(total_err))
 
     return P, Q
 
@@ -164,6 +186,24 @@ def task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q):
             predict.append(pr)
 
     return actual, predict
+
+
+def visualize(Q, titles):
+    x_cord, y_cord = [], []
+    for t in titles:
+        x_cord.append(Q[0][m_idxs[t]])
+        y_cord.append(Q[1][m_idxs[t]])
+
+    cnt = 0
+    for x, y in zip(x_cord, y_cord):
+        plt.plot(x, y, c=random_color(), marker='o', label=str(cnt) + ' ' + titles[cnt])  # plot dots
+        cnt += 1
+    plt.tight_layout()
+    for i, text in enumerate(titles):
+        plt.annotate(i, (x_cord[i], y_cord[i]))
+
+    plt.legend(loc='best', ncol=2)
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -191,6 +231,18 @@ if __name__ == '__main__':
     #print(rmse2)
 
     # Task3
-    P, Q = matrix_factorization(data, u_idxs, m_idxs, k=7)
-    rmse3 = rmse(*task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q))
-    print(rmse3)
+    for k in range(7,11):
+        P, Q = matrix_factorization(data, u_idxs, m_idxs, k=k, iters=250)
+        rmse3 = rmse(*task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q))
+        print(k,' -> ',rmse3)
+
+    # Task4
+    titles = ['Shawshank Redemption, The (1994)', 'Star Wars (1977)', 'Pulp Fiction (1994)',
+              'Stargate (1994)', 'Home Alone 3 (1997)', 'Home Alone (1990)',
+              'Return of the Pink Panther, The (1974)', 'Good, The Bad and The Ugly, The (1966)',
+              'Return of the Jedi (1983)', 'Empire Strikes Back, The (1980)',
+              'Star Trek: First Contact (1996)', 'Star Trek VI: The Undiscovered Country (1991)',
+              'Star Trek: The Wrath of Khan (1982)', 'Star Trek III: The Search for Spock (1984)',
+              'Star Trek IV: The Voyage Home (1986)', 'Grumpier Old Men (1995)', 'Dumb & Dumber (1994)',
+              'Jumanji (1995)', 'Winnie the Pooh and the Blustery Day (1968)', 'Toy Story (1995)']
+    #visualize(Q, titles)
