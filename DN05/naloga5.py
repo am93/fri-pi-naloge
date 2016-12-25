@@ -69,7 +69,7 @@ def task1_rs_average(users, movies, train_avg, correction=True):
     Predicition is evaluated as : (user_pred - train_avg) + (movie_pred - train_avg) + train_avg
     """
     actual, predict = [], []
-    with open('movielens-100k-test.tab') as test_file:
+    with open('movielens-100k-test.tab', encoding = "ISO-8859-1") as test_file:
         for line in test_file:
             u, m, r = line.rstrip().split('\t')
 
@@ -102,7 +102,7 @@ def task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs):
     """
     predict = []
     actual = []
-    with open('movielens-100k-test.tab') as test_file:
+    with open('movielens-100k-test.tab', encoding = "ISO-8859-1") as test_file:
         for line in test_file:
             u, m, r = line.rstrip().split('\t')
             actual.append(int(r))
@@ -220,21 +220,25 @@ if __name__ == '__main__':
             users[user].append(int(rating))
             data[(user, movie)] = int(rating)
 
+    print('Number of training rows is {0}.'.format(len(data)))
+    print('Number of distinct movies is {0}.'.format(len(movies)))
+    print('Number of distinct users is {0}'.format(len(users)))
+
     # Task1
-    #rmse1 = rmse(*task1_rs_average(users, movies, np.average(train_all)))
-    #print(rmse1)
+    rmse1 = rmse(*task1_rs_average(users, movies, np.average(train_all)))
+    print('Task1 RMSE: {0}.'.format(rmse1))
 
     # Task2
     matrix, u_idxs, m_idxs = create_user_movie_matrix(data, users, movies)
     u_avgs = average_user_scores(users, u_idxs)
-    #rmse2 = rmse(*task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs))
-    #print(rmse2)
+    rmse2 = rmse(*task2_rs2_cosine(matrix, u_idxs, m_idxs, u_avgs))
+    print('Task2 RMSE: {0}.'.format(rmse2))
 
     # Task3
-    for k in range(7,11):
-        P, Q = matrix_factorization(data, u_idxs, m_idxs, k=k, iters=250)
-        rmse3 = rmse(*task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q))
-        print(k,' -> ',rmse3)
+    #for k in range(7,11):
+    #    P, Q = matrix_factorization(data, u_idxs, m_idxs, k=k, iters=250)
+    #    rmse3 = rmse(*task3_rs3_rismf(u_avgs, u_idxs, m_idxs, P, Q))
+    #    print(k,' -> ',rmse3)
 
     # Task4
     titles = ['Shawshank Redemption, The (1994)', 'Star Wars (1977)', 'Pulp Fiction (1994)',
